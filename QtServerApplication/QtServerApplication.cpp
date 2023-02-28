@@ -2,23 +2,18 @@
 #include <QMessageBox>
 #include <QDateTime>
 
-
-QString txt(const char* s) {
-    return QObject::tr("[%1]# %2\n").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"), QString::fromLocal8Bit(s));
-}
-
-QString txt(const QString& s) {
-    return QObject::tr("[%1]# %2\n").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"), s);
-}
-
 QtServerApplication::QtServerApplication(QWidget *parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
 
     connect(ui.btnStart, &QPushButton::clicked, this, &QtServerApplication::startServer);
+
     connect(&m_tcpServer, &QTcpServer::newConnection, this, &QtServerApplication::acceptConnection);
     connect(&m_tcpServer, &QTcpServer::acceptError, this, &QtServerApplication::displayAcceptError);
+
+    connect(ui.btnSend, &QPushButton::clicked, this, &QtServerApplication::sendMsg);
+
     //connect(&m_tcpServer, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
     //connect(ui.btnStart, SIGNAL(clicked(bool)), this, SLOT(startServer()));
 }
@@ -43,39 +38,45 @@ void QtServerApplication::startServer() {
 
 void QtServerApplication::acceptConnection() {
     
-    m_tcpServerConnection = m_tcpServer.nextPendingConnection();
-    ui.txtDataLog->append(txt(tr("clients %1:%2 gets online").arg(m_tcpServerConnection->peerAddress().toString()))
-        .arg(m_tcpServerConnection->peerPort()));
-    connect(m_tcpServerConnection, &QAbstractSocket::readyRead, this, &QtServerApplication::readData);
-    connect(m_tcpServerConnection, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::errorOccurred),
-        this, &QtServerApplication::displayError);
+    QTcpSocket* tcpSocket = m_tcpServer.nextPendingConnection();
+    ui.txtDataLog->append(txt(tr("clients %1:%2 gets online").arg(tcpSocket->peerAddress().toString()))
+        .arg(tcpSocket->peerPort()));
+    TcpSocketConnection* m_tcpServerConnection = new TcpSocketConnection(tcpSocket);
+    connect(m_tcpServerConnection, &TcpSocketConnection::log, this, &QtServerApplication::displayLog);
+    connect(m_tcpServerConnection, &TcpSocketConnection::disconnected, this, &QtServerApplication::disconnected);
+    m_tcpServerConnectionMap[tcpSocket->socketDescriptor()] = m_tcpServerConnection;
 
     //m_tcpServerConnection->waitForReadyRead(3000);
 }
 
-void QtServerApplication::readData() {
-    ui.txtDataLog->append(txt(tr("receive %1:%2 data: \n%3").arg(m_tcpServerConnection->peerAddress().toString())
-        .arg(m_tcpServerConnection->peerPort())).arg(m_tcpServerConnection->readAll()));
-
+void QtServerApplication::displayLog(QString logString) {
+    ui.txtDataLog->append(logString);
 }
 
-void QtServerApplication::displayError(QAbstractSocket::SocketError socketError) {
-    switch (socketError) {
-    case QAbstractSocket::RemoteHostClosedError:
-        ui.txtDataLog->append(txt(tr("clients %1:%2 offline").arg(m_tcpServerConnection->peerAddress().toString())
-            .arg(m_tcpServerConnection->peerPort())));
-        break;
-    default:
-        ui.txtDataLog->append(txt(tr("clients %1:%2 error: %3").arg(m_tcpServerConnection->peerAddress().toString())
-            .arg(m_tcpServerConnection->peerPort())
-            .arg(m_tcpServerConnection->errorString())));
-    }
-}
 
 void QtServerApplication::displayAcceptError(QAbstractSocket::SocketError socketError) {
     switch (socketError) {
     default:
         ui.txtDataLog->append(txt(tr("accetpt error: %1").arg(m_tcpServer.errorString())));
+    }
+}
+
+void QtServerApplication::sendMsg() {
+    QString s = ui.txtDataSend->text();
+    QMapIterator<qintptr, TcpSocketConnection*> i(m_tcpServerConnectionMap);
+    while (i.hasNext()) {
+        i.next();
+        i.value()->write(s);
+    }
+}
+
+void QtServerApplication::disconnected(qintptr socketDescriptor)
+{
+    if (m_tcpServerConnectionMap.contains(socketDescriptor)) {
+        TcpSocketConnection* tcpSocketConnection = m_tcpServerConnectionMap.value(socketDescriptor);
+        delete tcpSocketConnection;
+        m_tcpServerConnectionMap.remove(socketDescriptor);
+        qDebug() << "m_tcpServerConnectionMap remove" << socketDescriptor;
     }
 }
 

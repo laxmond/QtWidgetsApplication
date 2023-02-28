@@ -4,6 +4,7 @@
 #include <QtNetwork/QtcpServer>
 #include <QtNetwork/QTcpSocket>
 #include "ui_QtServerApplication.h"
+#include "TcpSocketConnection.h"
 
 class QtServerApplication : public QMainWindow
 {
@@ -20,16 +21,20 @@ public slots:
 
     void acceptConnection();
 
-    void readData();
-
-    void displayError(QAbstractSocket::SocketError);
+    void displayLog(QString);
 
     void displayAcceptError(QAbstractSocket::SocketError);
+
+    void sendMsg();
+
+    void disconnected(qintptr);
 
 private:
     Ui::QtServerApplicationClass ui;
 
     QTcpServer m_tcpServer;
 
-    QTcpSocket* m_tcpServerConnection = nullptr;
+    QMap<qintptr, TcpSocketConnection*> m_tcpServerConnectionMap;
+
+    //TcpSocketConnection* m_tcpServerConnection = nullptr;
 };
