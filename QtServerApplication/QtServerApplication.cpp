@@ -44,6 +44,7 @@ void QtServerApplication::acceptConnection() {
     TcpSocketConnection* m_tcpServerConnection = new TcpSocketConnection(tcpSocket);
     connect(m_tcpServerConnection, &TcpSocketConnection::log, this, &QtServerApplication::displayLog);
     connect(m_tcpServerConnection, &TcpSocketConnection::disconnected, this, &QtServerApplication::disconnected);
+    connect(m_tcpServerConnection, &TcpSocketConnection::process, this, &QtServerApplication::process);
     m_tcpServerConnectionMap[tcpSocket->socketDescriptor()] = m_tcpServerConnection;
 
     //m_tcpServerConnection->waitForReadyRead(3000);
@@ -51,6 +52,17 @@ void QtServerApplication::acceptConnection() {
 
 void QtServerApplication::displayLog(QString logString) {
     ui.txtDataLog->append(logString);
+}
+
+void QtServerApplication::process(QTcpSocket* tcpSocket, QByteArray& data) {
+    QMapIterator<qintptr, TcpSocketConnection*> i(m_tcpServerConnectionMap);
+    while (i.hasNext()) {
+        i.next();
+        i.value()->write(data);
+        //if (i.key() != tcpSocket->socketDescriptor()) {
+        //    i.value()->write(data);
+        //}
+    }
 }
 
 

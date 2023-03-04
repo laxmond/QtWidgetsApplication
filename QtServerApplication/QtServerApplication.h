@@ -23,6 +23,8 @@ public slots:
 
     void displayLog(QString);
 
+    void process(QTcpSocket* , QByteArray&);
+
     void displayAcceptError(QAbstractSocket::SocketError);
 
     void sendMsg();

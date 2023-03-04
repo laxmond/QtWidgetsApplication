@@ -13,12 +13,14 @@ public:
 	~TcpSocketConnection();
 
 	void write(QString);
+	void write(QByteArray);
 
 public Q_SLOTS:
 	void handleReadData();
 	void handleError(QAbstractSocket::SocketError);
 
 Q_SIGNALS:
+	void process(QTcpSocket* ,QByteArray&);
 	void log(QString);
 	void disconnected(qintptr);
 

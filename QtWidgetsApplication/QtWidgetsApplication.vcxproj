@@ -92,10 +92,14 @@
     <QtRcc Include="QtWidgetsApplication.qrc" />
     <QtUic Include="QtWidgetsApplication.ui" />
     <QtMoc Include="QtWidgetsApplication.h" />
+    <ClCompile Include="Global.cpp" />
     <ClCompile Include="QtWidgetsApplication.cpp" />
     <ClCompile Include="main.cpp" />
     <None Include="QtWidgetsApplication.ico" />
     <ResourceCompile Include="QtWidgetsApplication.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Global.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

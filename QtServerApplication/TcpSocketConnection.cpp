@@ -34,9 +34,18 @@ TcpSocketConnection::~TcpSocketConnection()
 void TcpSocketConnection::write(QString writeString)
 {
 	m_tcpServerConnection->write(writeString.toUtf8());
-	m_tcpServerConnection->waitForBytesWritten(1000);
-	QString logString = txt(tr("send %1:%2 data: \n%3").arg(m_peerAddress.toString())
-		.arg(m_peerPort).arg(writeString));
+	m_tcpServerConnection->flush();
+	QString logString = txt(tr("send %1:%2 data length: %3").arg(m_peerAddress.toString())
+		.arg(m_peerPort).arg(writeString.size()));
+	emit log(logString);
+}
+
+void TcpSocketConnection::write(QByteArray writeData)
+{
+	m_tcpServerConnection->write(writeData);
+	m_tcpServerConnection->flush();
+	QString logString = txt(tr("send %1:%2 data length: %3").arg(m_peerAddress.toString())
+		.arg(m_peerPort).arg(writeData.size()));
 	emit log(logString);
 }
 
@@ -45,10 +54,11 @@ void TcpSocketConnection::handleReadData()
 	QByteArray data = m_tcpServerConnection->readAll();
 
 	// 处理数据
+	emit process(m_tcpServerConnection, data);
 
 	// 记录日志
 	QString logString = txt(tr("receive %1:%2 data: \n%3").arg(m_peerAddress.toString())
-		.arg(m_peerPort).arg(data));
+		.arg(m_peerPort).arg(data.size()));
 	emit log(logString);
 }
 
